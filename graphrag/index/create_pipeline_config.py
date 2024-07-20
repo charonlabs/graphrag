@@ -29,6 +29,7 @@ from graphrag.index.config.input import (
     PipelineCSVInputConfig,
     PipelineInputConfigTypes,
     PipelineTextInputConfig,
+    PipelineSupabaseInputConfig
 )
 from graphrag.index.config.pipeline import (
     PipelineConfig,
@@ -431,6 +432,16 @@ def _get_pipeline_input_config(
             )
         case InputFileType.text:
             return PipelineTextInputConfig(
+                base_dir=settings.input.base_dir,
+                file_pattern=settings.input.file_pattern,
+                encoding=settings.input.encoding,
+                type=settings.input.type,
+                connection_string=settings.input.connection_string,
+                storage_account_blob_url=settings.input.storage_account_blob_url,
+                container_name=settings.input.container_name,
+            )
+        case InputFileType.supabase:
+            return PipelineSupabaseInputConfig(
                 base_dir=settings.input.base_dir,
                 file_pattern=settings.input.file_pattern,
                 encoding=settings.input.encoding,

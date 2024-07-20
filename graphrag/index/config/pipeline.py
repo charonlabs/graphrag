@@ -8,6 +8,7 @@ from __future__ import annotations
 from devtools import pformat
 from pydantic import BaseModel
 from pydantic import Field as pydantic_Field
+from typing import Literal
 
 from .cache import PipelineCacheConfigTypes
 from .input import PipelineInputConfigTypes

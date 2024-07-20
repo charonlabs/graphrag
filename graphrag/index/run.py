@@ -13,7 +13,9 @@ from dataclasses import asdict
 from io import BytesIO
 from pathlib import Path
 from string import Template
-from typing import cast
+from typing import cast, TypeVar, Callable, Any
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import SQLModel
 
 import pandas as pd
 from datashaper import (
@@ -44,6 +46,7 @@ from .config import (
 )
 from .context import PipelineRunContext, PipelineRunStats
 from .emit import TableEmitterType, create_table_emitters
+from .emit.supabase_emitter import SupabaseEmitter
 from .input import load_input
 from .load_pipeline_config import load_pipeline_config
 from .progress import NullProgressReporter, ProgressReporter
@@ -66,9 +69,15 @@ from .workflows import (
 
 log = logging.getLogger(__name__)
 
+Episode = TypeVar("Episode", bound=SQLModel)
+Table = TypeVar("Table", bound=SQLModel)
 
 async def run_pipeline_with_config(
     config_or_path: PipelineConfig | str,
+    entity_id: int | None = None,
+    session: AsyncSession | None = None,
+    episode: Episode | None = None,
+    promptify: Callable[[AsyncSession, Episode, bool], str] | None = None,
     workflows: list[PipelineWorkflowReference] | None = None,
     dataset: pd.DataFrame | None = None,
     storage: PipelineStorage | None = None,
@@ -82,6 +91,7 @@ async def run_pipeline_with_config(
     memory_profile: bool = False,
     run_id: str | None = None,
     is_resume_run: bool = False,
+    table_model: Table | None = None,
     **_kwargs: dict,
 ) -> AsyncIterable[PipelineRunResult]:
     """Run a pipeline with the given config.
@@ -126,11 +136,15 @@ async def run_pipeline_with_config(
 
     async def _create_input(
         config: PipelineInputConfigTypes | None,
+        entity_id: int | None,
+        session: AsyncSession | None,
+        episode: Episode | None,
+        promptify: Callable[[AsyncSession, Episode, bool], str] | None,
     ) -> pd.DataFrame | None:
         if config is None:
             return None
 
-        return await load_input(config, progress_reporter, root_dir)
+        return await load_input(config, session, episode, promptify, progress_reporter, root_dir, entity_id)
 
     def _create_postprocess_steps(
         config: PipelineInputConfigTypes | None,
@@ -141,7 +155,7 @@ async def run_pipeline_with_config(
     storage = storage or _create_storage(config.storage)
     cache = cache or _create_cache(config.cache)
     callbacks = callbacks or _create_reporter(config.reporting)
-    dataset = dataset if dataset is not None else await _create_input(config.input)
+    dataset = dataset if dataset is not None else await _create_input(config.input, entity_id, session, episode, promptify)
     post_process_steps = input_post_process_steps or _create_postprocess_steps(
         config.input
     )
@@ -164,6 +178,9 @@ async def run_pipeline_with_config(
         progress_reporter=progress_reporter,
         emit=emit,
         is_resume_run=is_resume_run,
+        entity_id=entity_id,
+        session=session,
+        table_model=table_model,
     ):
         yield table
 
@@ -181,6 +198,9 @@ async def run_pipeline(
     emit: list[TableEmitterType] | None = None,
     memory_profile: bool = False,
     is_resume_run: bool = False,
+    entity_id: int | None = None,
+    session: AsyncSession | None = None,
+    table_model: Table | None = None,
     **_kwargs: dict,
 ) -> AsyncIterable[PipelineRunResult]:
     """Run the pipeline.
@@ -216,6 +236,7 @@ async def run_pipeline(
         lambda e, s, d: cast(WorkflowCallbacks, callbacks).on_error(
             "Error emitting table", e, s, d
         ),
+        table_model=table_model or None,
     )
     loaded_workflows = load_workflows(
         workflows,
@@ -236,7 +257,11 @@ async def run_pipeline(
     async def dump_stats() -> None:
         await storage.set("stats.json", json.dumps(asdict(stats), indent=4))
 
-    async def load_table_from_storage(name: str) -> pd.DataFrame:
+    async def load_table_from_storage(name: str, entity_id: int | None = None, session: AsyncSession | None = None, supabase_emitter: SupabaseEmitter | None = None) -> pd.DataFrame:
+        if any(isinstance(emitter, SupabaseEmitter) for emitter in emitters):
+            if entity_id is None or session is None or supabase_emitter is None:
+                raise ValueError("Entity ID, session, and supabase emitter instance are required for Supabase emitter")
+            return await supabase_emitter.load_table(name=name, entity_id=entity_id, session=session)
         if not await storage.has(name):
             msg = f"Could not find {name} in storage!"
             raise ValueError(msg)
@@ -253,7 +278,11 @@ async def run_pipeline(
         log.info("dependencies for %s: %s", workflow.name, deps)
         for id in deps:
             workflow_id = f"workflow:{id}"
-            table = await load_table_from_storage(f"{id}.parquet")
+            if any(isinstance(emitter, SupabaseEmitter) for emitter in emitters):
+                supabase_emitter = next((emitter for emitter in emitters if isinstance(emitter, SupabaseEmitter)), None)
+                table = await load_table_from_storage(f"{id}", entity_id, session, supabase_emitter)
+            else:
+                table = await load_table_from_storage(f"{id}.parquet")
             workflow.add_table(workflow_id, table)
 
     async def write_workflow_stats(
@@ -280,10 +309,15 @@ async def run_pipeline(
             "first row of %s => %s", workflow_name, workflow.output().iloc[0].to_json()
         )
 
-    async def emit_workflow_output(workflow: Workflow) -> pd.DataFrame:
+    async def emit_workflow_output(workflow: Workflow, entity_id: int | None = None, session: AsyncSession | None = None) -> pd.DataFrame:
         output = cast(pd.DataFrame, workflow.output())
         for emitter in emitters:
-            await emitter.emit(workflow.name, output)
+            if type(emitter) == SupabaseEmitter:
+                if entity_id is None or session is None:
+                    raise ValueError("Entity ID and session are required for Supabase emitter")
+                await emitter.emit(workflow.name, entity_id, output, session)
+            else:
+                await emitter.emit(workflow.name, output)
         return output
 
     dataset = await _run_post_process_steps(
@@ -298,7 +332,7 @@ async def run_pipeline(
     last_workflow = "input"
 
     try:
-        await dump_stats()
+        # await dump_stats()
 
         for workflow_to_run in workflows_to_run:
             # Try to flush out any intermediate dataframes
@@ -321,17 +355,17 @@ async def run_pipeline(
 
             workflow_start_time = time.time()
             result = await workflow.run(context, callbacks)
-            await write_workflow_stats(workflow, result, workflow_start_time)
+            # await write_workflow_stats(workflow, result, workflow_start_time)
 
             # Save the output from the workflow
-            output = await emit_workflow_output(workflow)
+            output = await emit_workflow_output(workflow, entity_id, session)
             yield PipelineRunResult(workflow_name, output, None)
             output = None
             workflow.dispose()
             workflow = None
 
         stats.total_runtime = time.time() - start_time
-        await dump_stats()
+        # await dump_stats()
     except Exception as e:
         log.exception("error running workflow %s", last_workflow)
         cast(WorkflowCallbacks, callbacks).on_error(

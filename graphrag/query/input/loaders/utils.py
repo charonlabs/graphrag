@@ -161,14 +161,14 @@ def to_optional_float(data: pd.Series, column_name: str | None) -> float | None:
         value = data[column_name]
         if value is None:
             return None
-        if not isinstance(value, float):
-            msg = f"value is not a float: {value} ({type(value)})"
+        try:
+            return float(value)
+        except ValueError:
+            msg = f"value cannot be converted to float: {value} ({type(value)})"
             raise ValueError(msg)
     else:
         msg = f"Column {column_name} not found in data"
         raise ValueError(msg)
-
-    return float(value)
 
 
 def to_dict(

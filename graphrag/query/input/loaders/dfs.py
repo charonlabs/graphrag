@@ -4,6 +4,7 @@
 """Load data from dataframes into collections of data objects."""
 
 import pandas as pd
+from typing import TypeVar
 
 from graphrag.model import (
     Community,
@@ -24,6 +25,12 @@ from graphrag.query.input.loaders.utils import (
     to_str,
 )
 from graphrag.vector_stores import BaseVectorStore, VectorStoreDocument
+from graphrag.vector_stores.supabase import SupabaseVectorStore
+
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import SQLModel
+
+Table = TypeVar("Table", bound=SQLModel)
 
 
 def read_entities(
@@ -70,9 +77,12 @@ def read_entities(
     return entities
 
 
-def store_entity_semantic_embeddings(
+async def store_entity_semantic_embeddings(
     entities: list[Entity],
     vectorstore: BaseVectorStore,
+    session: AsyncSession | None = None,
+    entity_id: int | None = None,
+    table_model: Table | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity semantic embeddings in a vectorstore."""
     documents = [
@@ -88,13 +98,22 @@ def store_entity_semantic_embeddings(
         )
         for entity in entities
     ]
-    vectorstore.load_documents(documents=documents)
+    if isinstance(vectorstore, SupabaseVectorStore):
+        assert session is not None
+        assert entity_id is not None
+        assert table_model is not None
+        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, table_model=table_model)
+    else:
+        vectorstore.load_documents(documents=documents)
     return vectorstore
 
 
-def store_entity_behavior_embeddings(
+async def store_entity_behavior_embeddings(
     entities: list[Entity],
     vectorstore: BaseVectorStore,
+    session: AsyncSession | None = None,
+    entity_id: int | None = None,
+    table_model: Table | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity behavior embeddings in a vectorstore."""
     documents = [
@@ -110,7 +129,13 @@ def store_entity_behavior_embeddings(
         )
         for entity in entities
     ]
-    vectorstore.load_documents(documents=documents)
+    if isinstance(vectorstore, SupabaseVectorStore):
+        assert session is not None
+        assert entity_id is not None
+        assert table_model is not None
+        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, table_model=table_model)
+    else:
+        vectorstore.load_documents(documents=documents)
     return vectorstore
 
 
@@ -289,7 +314,7 @@ def read_text_units(
             ),
             text_embedding=to_optional_list(row, embedding_col, item_type=float),  # type: ignore
             n_tokens=to_optional_int(row, tokens_col),
-            document_ids=to_optional_list(row, document_ids_col, item_type=str),
+            document_ids=to_optional_list(row, document_ids_col, item_type=int),
             attributes=(
                 {col: row.get(col) for col in attributes_cols}
                 if attributes_cols

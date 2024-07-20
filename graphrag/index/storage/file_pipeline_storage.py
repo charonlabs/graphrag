@@ -33,7 +33,7 @@ class FilePipelineStorage(PipelineStorage):
         """Init method definition."""
         self._root_dir = root_dir or ""
         self._encoding = encoding or "utf-8"
-        Path(self._root_dir).mkdir(parents=True, exist_ok=True)
+        # Path(self._root_dir).mkdir(parents=True, exist_ok=True)
 
     def find(
         self,

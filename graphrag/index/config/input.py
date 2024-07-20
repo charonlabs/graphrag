@@ -114,7 +114,12 @@ class PipelineTextInputConfig(PipelineInputConfig[Literal[InputFileType.text]]):
         default=None,
     )
     """Number of characters to use from the text as the title."""
+    
+class PipelineSupabaseInputConfig(PipelineInputConfig[Literal[InputFileType.supabase]]):
+    """Represent the configuration for a supabase input."""
+
+    file_type: Literal[InputFileType.supabase] = InputFileType.supabase
 
 
-PipelineInputConfigTypes = PipelineCSVInputConfig | PipelineTextInputConfig
+PipelineInputConfigTypes = PipelineCSVInputConfig | PipelineTextInputConfig | PipelineSupabaseInputConfig
 """Represent the types of inputs that can be used in a pipeline."""

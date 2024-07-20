@@ -76,6 +76,7 @@ def read_indexer_reports(
     filtered_community_df = entity_df["community"].drop_duplicates()
 
     report_df = _filter_under_community_level(report_df, community_level)
+    report_df['community'] = report_df['community'].astype(str)
     report_df = report_df.merge(filtered_community_df, on="community", how="inner")
 
     return read_community_reports(
