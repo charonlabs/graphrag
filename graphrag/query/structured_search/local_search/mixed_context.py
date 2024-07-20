@@ -3,10 +3,13 @@
 """Algorithms to build context data for local search prompt."""
 
 import logging
-from typing import Any
+from typing import Any, TypeVar
 
 import pandas as pd
 import tiktoken
+
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import SQLModel
 
 from graphrag.model import (
     CommunityReport,
@@ -43,8 +46,13 @@ from graphrag.query.llm.base import BaseTextEmbedding
 from graphrag.query.llm.text_utils import num_tokens
 from graphrag.query.structured_search.base import LocalContextBuilder
 from graphrag.vector_stores import BaseVectorStore
+from graphrag.vector_stores.supabase import SupabaseVectorStore
+
 
 log = logging.getLogger(__name__)
+
+
+VectorTable = TypeVar("VectorTable", bound=SQLModel)
 
 
 class LocalSearchMixedContext(LocalContextBuilder):
@@ -88,7 +96,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
         """Filter entity text embeddings by entity keys."""
         self.entity_text_embeddings.filter_by_id(entity_keys)
 
-    def build_context(
+    async def build_context(
         self,
         query: str,
         conversation_history: ConversationHistory | None = None,
@@ -111,6 +119,9 @@ class LocalSearchMixedContext(LocalContextBuilder):
         min_community_rank: int = 0,
         community_context_name: str = "Reports",
         column_delimiter: str = "|",
+        session: AsyncSession | None = None,
+        entity_id: int | None = None,
+        vector_table_model: VectorTable | None = None, # type: ignore
         **kwargs: dict[str, Any],
     ) -> tuple[str | list[str], dict[str, pd.DataFrame]]:
         """
@@ -136,17 +147,33 @@ class LocalSearchMixedContext(LocalContextBuilder):
             )
             query = f"{query}\n{pre_user_questions}"
 
-        selected_entities = map_query_to_entities(
-            query=query,
-            text_embedding_vectorstore=self.entity_text_embeddings,
-            text_embedder=self.text_embedder,
-            all_entities=list(self.entities.values()),
-            embedding_vectorstore_key=self.embedding_vectorstore_key,
-            include_entity_names=include_entity_names,
-            exclude_entity_names=exclude_entity_names,
-            k=top_k_mapped_entities,
-            oversample_scaler=2,
-        )
+        if isinstance(self.entity_text_embeddings, SupabaseVectorStore):
+            selected_entities = await map_query_to_entities(
+                query=query,
+                text_embedding_vectorstore=self.entity_text_embeddings,
+                text_embedder=self.text_embedder,
+                all_entities=list(self.entities.values()),
+                embedding_vectorstore_key=self.embedding_vectorstore_key,
+                include_entity_names=include_entity_names,
+                exclude_entity_names=exclude_entity_names,
+                k=top_k_mapped_entities,
+                oversample_scaler=2,
+                session=session,
+                entity_id=entity_id,
+                vector_table_model=vector_table_model,
+            )
+        else:
+            selected_entities = await map_query_to_entities(
+                query=query,
+                text_embedding_vectorstore=self.entity_text_embeddings,
+                text_embedder=self.text_embedder,
+                all_entities=list(self.entities.values()),
+                embedding_vectorstore_key=self.embedding_vectorstore_key,
+                include_entity_names=include_entity_names,
+                exclude_entity_names=exclude_entity_names,
+                k=top_k_mapped_entities,
+                oversample_scaler=2,
+            )
 
         # build context
         final_context = list[str]()

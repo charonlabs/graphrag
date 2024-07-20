@@ -35,6 +35,7 @@ from ..index.emit.supabase_emitter import SupabaseEmitter
 reporter = PrintProgressReporter("")
 
 Table = TypeVar("Table", bound=SQLModel)
+VectorTable = TypeVar("VectorTable", bound=SQLModel)
 
 def __get_embedding_description_store(
     vector_store_type: str = VectorStoreType.LanceDB, config_args: dict | None = None
@@ -123,7 +124,8 @@ async def run_local_search(
     use_db: bool = False,
     session: AsyncSession | None = None,
     entity_id: int | None = None,
-    table_model: Table | None = None # type: ignore
+    table_model: Table | None = None, # type: ignore
+    vector_table_model: VectorTable | None = None # type: ignore
 ):
     """Run a local search with the given query."""
     data_dir, root_dir, config = _configure_paths_and_settings(data_dir, root_dir, use_db)
@@ -168,7 +170,7 @@ async def run_local_search(
     vector_store_args = (
         config.embeddings.vector_store if config.embeddings.vector_store else {}
     )
-    vector_store_type = vector_store_args.get("type", VectorStoreType.LanceDB)
+    vector_store_type = vector_store_args.get("type", VectorStoreType.Supabase)
 
     description_embedding_store = __get_embedding_description_store(
         vector_store_type=vector_store_type,
@@ -177,7 +179,7 @@ async def run_local_search(
     entities = read_indexer_entities(final_nodes, final_entities, community_level)
     if isinstance(description_embedding_store, SupabaseVectorStore):
         await store_entity_semantic_embeddings(
-            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, table_model=table_model # type: ignore
+            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, vector_table_model=vector_table_model # type: ignore
         )
     else:
         await store_entity_semantic_embeddings(
@@ -202,7 +204,10 @@ async def run_local_search(
         response_type=response_type,
     )
 
-    result = await search_engine.asearch(query=query)
+    if isinstance(description_embedding_store, SupabaseVectorStore):
+        result = await search_engine.asearch(query=query, session=session, entity_id=entity_id, vector_table_model=vector_table_model) # type: ignore
+    else:
+        result = await search_engine.asearch(query=query)
     reporter.success(f"Local Search Response: {result.response}")
     return result.response
 

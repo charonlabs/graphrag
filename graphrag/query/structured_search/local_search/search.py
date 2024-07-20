@@ -5,9 +5,12 @@
 
 import logging
 import time
-from typing import Any
+from typing import Any, TypeVar
 
 import tiktoken
+
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import SQLModel
 
 from graphrag.query.context_builder.builders import LocalContextBuilder
 from graphrag.query.context_builder.conversation_history import (
@@ -19,6 +22,8 @@ from graphrag.query.structured_search.base import BaseSearch, SearchResult
 from graphrag.query.structured_search.local_search.system_prompt import (
     LOCAL_SEARCH_SYSTEM_PROMPT,
 )
+from graphrag.query.structured_search.local_search.mixed_context import LocalSearchMixedContext
+from graphrag.vector_stores.supabase import SupabaseVectorStore
 
 DEFAULT_LLM_PARAMS = {
     "max_tokens": 1500,
@@ -26,6 +31,9 @@ DEFAULT_LLM_PARAMS = {
 }
 
 log = logging.getLogger(__name__)
+
+
+VectorTable = TypeVar("VectorTable", bound=SQLModel)
 
 
 class LocalSearch(BaseSearch):
@@ -57,17 +65,42 @@ class LocalSearch(BaseSearch):
         self,
         query: str,
         conversation_history: ConversationHistory | None = None,
+        session: AsyncSession | None = None,
+        entity_id: int | None = None,
+        vector_table_model: VectorTable | None = None, # type: ignore
         **kwargs,
     ) -> SearchResult:
         """Build local search context that fits a single context window and generate answer for the user query."""
         start_time = time.time()
         search_prompt = ""
 
-        context_text, context_records = self.context_builder.build_context(
-            query=query,
-            conversation_history=conversation_history,
-            **kwargs,
-            **self.context_builder_params,
+        if isinstance(self.context_builder, LocalSearchMixedContext):
+            if isinstance(self.context_builder.entity_text_embeddings, SupabaseVectorStore):
+                assert session is not None, "Session is required for SupabaseVectorStore"
+                assert entity_id is not None, "Entity ID is required for SupabaseVectorStore"
+                assert vector_table_model is not None, "Vector table model is required for SupabaseVectorStore"
+                context_text, context_records = await self.context_builder.build_context(
+                    query=query,
+                    conversation_history=conversation_history,
+                    session=session,
+                    entity_id=entity_id,
+                    vector_table_model=vector_table_model,
+                    **kwargs,
+                    **self.context_builder_params,
+                )
+            else:
+                context_text, context_records = await self.context_builder.build_context(
+                    query=query,
+                    conversation_history=conversation_history,
+                    **kwargs,
+                    **self.context_builder_params,
+                )
+        else:
+            context_text, context_records = self.context_builder.build_context(
+                query=query,
+                conversation_history=conversation_history,
+                **kwargs,
+                **self.context_builder_params,
         )
         log.info("GENERATE ANSWER: %s. QUERY: %s", start_time, query)
         try:

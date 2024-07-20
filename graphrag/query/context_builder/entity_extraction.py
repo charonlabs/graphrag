@@ -4,6 +4,10 @@
 """Orchestration Context Builders."""
 
 from enum import Enum
+from typing import TypeVar
+
+from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from graphrag.model import Entity, Relationship
 from graphrag.query.input.retrieval.entities import (
@@ -12,6 +16,7 @@ from graphrag.query.input.retrieval.entities import (
 )
 from graphrag.query.llm.base import BaseTextEmbedding
 from graphrag.vector_stores import BaseVectorStore
+from graphrag.vector_stores.supabase import SupabaseVectorStore
 
 
 class EntityVectorStoreKey(str, Enum):
@@ -31,8 +36,9 @@ class EntityVectorStoreKey(str, Enum):
         msg = f"Invalid EntityVectorStoreKey: {value}"
         raise ValueError(msg)
 
+VectorTable = TypeVar("VectorTable", bound=SQLModel)
 
-def map_query_to_entities(
+async def map_query_to_entities(
     query: str,
     text_embedding_vectorstore: BaseVectorStore,
     text_embedder: BaseTextEmbedding,
@@ -42,6 +48,9 @@ def map_query_to_entities(
     exclude_entity_names: list[str] | None = None,
     k: int = 10,
     oversample_scaler: int = 2,
+    session: AsyncSession | None = None,
+    entity_id: int | None = None,
+    vector_table_model: VectorTable | None = None, # type: ignore
 ) -> list[Entity]:
     """Extract entities that match a given query using semantic similarity of text embeddings of query and entity descriptions."""
     if include_entity_names is None:
@@ -52,11 +61,24 @@ def map_query_to_entities(
     if query != "":
         # get entities with highest semantic similarity to query
         # oversample to account for excluded entities
-        search_results = text_embedding_vectorstore.similarity_search_by_text(
-            text=query,
-            text_embedder=lambda t: text_embedder.embed(t),
-            k=k * oversample_scaler,
-        )
+        if isinstance(text_embedding_vectorstore, SupabaseVectorStore):
+            assert session is not None
+            assert entity_id is not None
+            assert vector_table_model is not None
+            search_results = await text_embedding_vectorstore.similarity_search_by_text(
+                text=query,
+                text_embedder=lambda t: text_embedder.embed(t),
+                k=k * oversample_scaler,
+                session=session,
+                entity_id=entity_id,
+                vector_table_model=vector_table_model,
+            )
+        else:
+            search_results = text_embedding_vectorstore.similarity_search_by_text(
+                text=query,
+                text_embedder=lambda t: text_embedder.embed(t),
+                k=k * oversample_scaler,
+            )
         for result in search_results:
             matched = get_entity_by_key(
                 entities=all_entities,

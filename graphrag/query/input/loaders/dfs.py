@@ -30,7 +30,7 @@ from graphrag.vector_stores.supabase import SupabaseVectorStore
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import SQLModel
 
-Table = TypeVar("Table", bound=SQLModel)
+VectorTable = TypeVar("VectorTable", bound=SQLModel)
 
 
 def read_entities(
@@ -82,7 +82,7 @@ async def store_entity_semantic_embeddings(
     vectorstore: BaseVectorStore,
     session: AsyncSession | None = None,
     entity_id: int | None = None,
-    table_model: Table | None = None, # type: ignore
+    vector_table_model: VectorTable | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity semantic embeddings in a vectorstore."""
     documents = [
@@ -101,8 +101,8 @@ async def store_entity_semantic_embeddings(
     if isinstance(vectorstore, SupabaseVectorStore):
         assert session is not None
         assert entity_id is not None
-        assert table_model is not None
-        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, table_model=table_model)
+        assert vector_table_model is not None
+        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
     return vectorstore
@@ -113,7 +113,7 @@ async def store_entity_behavior_embeddings(
     vectorstore: BaseVectorStore,
     session: AsyncSession | None = None,
     entity_id: int | None = None,
-    table_model: Table | None = None, # type: ignore
+    vector_table_model: VectorTable | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity behavior embeddings in a vectorstore."""
     documents = [
@@ -132,8 +132,8 @@ async def store_entity_behavior_embeddings(
     if isinstance(vectorstore, SupabaseVectorStore):
         assert session is not None
         assert entity_id is not None
-        assert table_model is not None
-        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, table_model=table_model)
+        assert vector_table_model is not None
+        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
     return vectorstore
