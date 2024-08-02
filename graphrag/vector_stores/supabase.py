@@ -42,7 +42,7 @@ class SupabaseVectorStore(BaseVectorStore):
             
         if data:
             try:
-                await session.exec(delete(vector_table_model).where(vector_table_model.entity_id == entity_id)) # type: ignore
+                await session.scalars(delete(vector_table_model).where(vector_table_model.entity_id == entity_id)) # type: ignore
             except Exception as e:
                 print(f"Error deleting existing data: {e}")
                 pass
@@ -63,11 +63,11 @@ class SupabaseVectorStore(BaseVectorStore):
             """Perform a vector-based similarity search."""
             if self.query_filter:
                 docs = (
-                    await session.exec(select(vector_table_model).where(vector_table_model.entity_id == entity_id, vector_table_model.id in self.query_filter).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
+                    await session.scalars(select(vector_table_model).where(vector_table_model.entity_id == entity_id, vector_table_model.id in self.query_filter).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
                 )
             else:
                 docs = (
-                    await session.exec(select(vector_table_model).where(vector_table_model.entity_id == entity_id).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
+                    await session.scalars(select(vector_table_model).where(vector_table_model.entity_id == entity_id).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
                 )
             return [
                 VectorStoreSearchResult(
