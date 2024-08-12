@@ -16,10 +16,12 @@ from graphrag.config import (
     create_graphrag_config,
 )
 from graphrag.index.progress import PrintProgressReporter
+from graphrag.model.entity import Entity
 from graphrag.query.input.loaders.dfs import (
     store_entity_semantic_embeddings,
 )
 from graphrag.vector_stores import VectorStoreFactory, VectorStoreType
+from graphrag.vector_stores.lancedb import LanceDBVectorStore
 from graphrag.vector_stores.supabase import SupabaseVectorStore
 
 from .factories import get_global_search_engine, get_local_search_engine
@@ -37,25 +39,50 @@ reporter = PrintProgressReporter("")
 Table = TypeVar("Table", bound=SQLModel)
 VectorTable = TypeVar("VectorTable", bound=SQLModel)
 
-def __get_embedding_description_store(
-    vector_store_type: str = VectorStoreType.LanceDB, config_args: dict | None = None
+async def __get_embedding_description_store(
+    entities: list[Entity],
+    vector_store_type: str = VectorStoreType.LanceDB,
+    config_args: dict | None = None,
 ):
     """Get the embedding description store."""
     if not config_args:
         config_args = {}
 
-    config_args.update({
-        "collection_name": config_args.get(
-            "query_collection_name",
-            config_args.get("collection_name", "description_embedding"),
-        ),
-    })
-
+    collection_name = config_args.get(
+        "query_collection_name", "entity_description_embeddings"
+    )
+    config_args.update({"collection_name": collection_name})
     description_embedding_store = VectorStoreFactory.get_vector_store(
         vector_store_type=vector_store_type, kwargs=config_args
     )
 
     description_embedding_store.connect(**config_args)
+
+    if config_args.get("overwrite", True):
+        # this step assumps the embeddings where originally stored in a file rather
+        # than a vector database
+
+        # dump embeddings from the entities list to the description_embedding_store
+        await store_entity_semantic_embeddings(
+            entities=entities, vectorstore=description_embedding_store
+        )
+    else:
+        # load description embeddings to an in-memory lancedb vectorstore
+        # to connect to a remote db, specify url and port values.
+        description_embedding_store = LanceDBVectorStore(
+            collection_name=collection_name
+        )
+        description_embedding_store.connect(
+            db_uri=config_args.get("db_uri", "./lancedb")
+        )
+
+        # load data from an existing table
+        description_embedding_store.document_collection = (
+            description_embedding_store.db_connection.open_table(
+                description_embedding_store.collection_name
+            )
+        )
+
     return description_embedding_store
 
 
@@ -170,9 +197,13 @@ async def run_local_search(
     vector_store_args = (
         config.embeddings.vector_store if config.embeddings.vector_store else {}
     )
+
+    reporter.info(f"Vector Store Args: {vector_store_args}")
     vector_store_type = vector_store_args.get("type", VectorStoreType.Supabase)
 
-    description_embedding_store = __get_embedding_description_store(
+    entities = read_indexer_entities(final_nodes, final_entities, community_level)
+    description_embedding_store = await __get_embedding_description_store(
+        entities=entities,
         vector_store_type=vector_store_type,
         config_args=vector_store_args,
     )
@@ -238,32 +269,45 @@ def _infer_data_dir(root: str) -> str:
     raise ValueError(msg)
 
 
-def _create_graphrag_config(root: str | None, data_dir: str | None) -> GraphRagConfig:
+def _create_graphrag_config(
+    root: str | None,
+    config_dir: str | None,
+) -> GraphRagConfig:
     """Create a GraphRag configuration."""
-    return _read_config_parameters(cast(str, root or data_dir))
+    return _read_config_parameters(root or "./", config_dir)
 
 
-def _read_config_parameters(root: str):
+def _read_config_parameters(root: str, config: str | None):
     _root = Path(root)
-    settings_yaml = _root / "settings.yaml"
+    settings_yaml = (
+        Path(config)
+        if config and Path(config).suffix in [".yaml", ".yml"]
+        else _root / "settings.yaml"
+    )
     if not settings_yaml.exists():
         settings_yaml = _root / "settings.yml"
-    settings_json = _root / "settings.json"
 
     if settings_yaml.exists():
         reporter.info(f"Reading settings from {settings_yaml}")
-        with settings_yaml.open("r") as file:
+        with settings_yaml.open(
+            "rb",
+        ) as file:
             import yaml
 
-            data = yaml.safe_load(file)
+            data = yaml.safe_load(file.read().decode(encoding="utf-8", errors="strict"))
             return create_graphrag_config(data, root)
 
+    settings_json = (
+        Path(config)
+        if config and Path(config).suffix == ".json"
+        else _root / "settings.json"
+    )
     if settings_json.exists():
         reporter.info(f"Reading settings from {settings_json}")
-        with settings_json.open("r") as file:
+        with settings_json.open("rb") as file:
             import json
 
-            data = json.loads(file.read())
+            data = json.loads(file.read().decode(encoding="utf-8", errors="strict"))
             return create_graphrag_config(data, root)
 
     reporter.info("Reading settings from environment variables")

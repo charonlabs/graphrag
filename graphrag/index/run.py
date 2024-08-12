@@ -258,7 +258,9 @@ async def run_pipeline(
         )
 
     async def dump_stats() -> None:
-        await storage.set("stats.json", json.dumps(asdict(stats), indent=4))
+        await storage.set(
+            "stats.json", json.dumps(asdict(stats), indent=4, ensure_ascii=False)
+        )
 
     async def load_table_from_storage(name: str, entity_id: int | None = None, session: AsyncSession | None = None, supabase_emitter: SupabaseEmitter | None = None) -> pd.DataFrame:
         if any(isinstance(emitter, SupabaseEmitter) for emitter in emitters):
