@@ -30,7 +30,13 @@ class SupabaseEmitter(TableEmitter):
 
     async def emit(self, name: str, entity_id: int, episode_id: int, data: pd.DataFrame, session: AsyncSession) -> None:
         """Emit data to the Supabase database."""
-        table = self.table_model(entity_id=entity_id, name=name, data=data.to_json(), created_at=datetime.now(), last_episode_id=episode_id) # type: ignore
+        table = self.table_model(
+            entity_id=entity_id,
+            name=name,
+            data=data.to_json(),
+            created_at=datetime.now(),
+            last_episode_id=episode_id
+        ) # type: ignore
         logger.info(f"Emiting {name} for entity_id {entity_id} and episode_id {episode_id} to Supabase")
         try:
             session.add(table)
