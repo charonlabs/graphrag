@@ -67,6 +67,7 @@ networkx = "^3"
 fastparquet = "^2024.2.0"
 # 1.13.0 was a footgun
 scipy = "1.12.0"
+sqlmodel = "^0.0.21"
 
 # Configuration
 pyyaml = "^6.0.1"
