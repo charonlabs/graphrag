@@ -75,8 +75,9 @@ Table = TypeVar("Table", bound=SQLModel)
 async def run_pipeline_with_config(
     config_or_path: PipelineConfig | str,
     entity_id: int | None = None,
+    episode_id: int | None = None,
     session: AsyncSession | None = None,
-    episode: Episode | None = None,
+    episode_model: Episode | None = None,
     promptify: Callable[[AsyncSession, Episode, bool], str] | None = None,
     workflows: list[PipelineWorkflowReference] | None = None,
     dataset: pd.DataFrame | None = None,
@@ -155,7 +156,7 @@ async def run_pipeline_with_config(
     storage = storage or _create_storage(config.storage)
     cache = cache or _create_cache(config.cache)
     callbacks = callbacks or _create_reporter(config.reporting)
-    dataset = dataset if dataset is not None else await _create_input(config.input, entity_id, session, episode, promptify)
+    dataset = dataset if dataset is not None else await _create_input(config.input, entity_id, session, episode_model, promptify)
     post_process_steps = input_post_process_steps or _create_postprocess_steps(
         config.input
     )
@@ -179,6 +180,7 @@ async def run_pipeline_with_config(
         emit=emit,
         is_resume_run=is_resume_run,
         entity_id=entity_id,
+        episode_id=episode_id,
         session=session,
         table_model=table_model,
     ):
@@ -199,6 +201,7 @@ async def run_pipeline(
     memory_profile: bool = False,
     is_resume_run: bool = False,
     entity_id: int | None = None,
+    episode_id: int | None = None,
     session: AsyncSession | None = None,
     table_model: Table | None = None,
     **_kwargs: dict,
@@ -309,13 +312,13 @@ async def run_pipeline(
             "first row of %s => %s", workflow_name, workflow.output().iloc[0].to_json()
         )
 
-    async def emit_workflow_output(workflow: Workflow, entity_id: int | None = None, session: AsyncSession | None = None) -> pd.DataFrame:
+    async def emit_workflow_output(workflow: Workflow, entity_id: int | None = None, episode_id: int | None = None, session: AsyncSession | None = None) -> pd.DataFrame:
         output = cast(pd.DataFrame, workflow.output())
         for emitter in emitters:
             if type(emitter) == SupabaseEmitter:
-                if entity_id is None or session is None:
-                    raise ValueError("Entity ID and session are required for Supabase emitter")
-                await emitter.emit(workflow.name, entity_id, output, session)
+                if entity_id is None or episode_id is None or session is None:
+                    raise ValueError("Entity ID, episode ID, and session are required for Supabase emitter")
+                await emitter.emit(workflow.name, entity_id, episode_id, output, session)
             else:
                 await emitter.emit(workflow.name, output)
         return output
@@ -358,7 +361,7 @@ async def run_pipeline(
             # await write_workflow_stats(workflow, result, workflow_start_time)
 
             # Save the output from the workflow
-            output = await emit_workflow_output(workflow, entity_id, session)
+            output = await emit_workflow_output(workflow, entity_id, episode_id, session)
             yield PipelineRunResult(workflow_name, output, None)
             output = None
             workflow.dispose()

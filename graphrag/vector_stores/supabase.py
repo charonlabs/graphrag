@@ -26,7 +26,7 @@ class SupabaseVectorStore(BaseVectorStore):
         pass
     
     async def load_documents(
-        self, documents: list[VectorStoreDocument], session: AsyncSession, entity_id: int, vector_table_model: VectorTable # type: ignore
+        self, documents: list[VectorStoreDocument], session: AsyncSession, entity_id: int, episode_id: int, vector_table_model: VectorTable # type: ignore
     ) -> None:
         """Load documents into vector storage."""
         data = [vector_table_model(
@@ -34,7 +34,8 @@ class SupabaseVectorStore(BaseVectorStore):
             text=document.text,
             vector=document.vector,
             attributes=json.dumps(document.attributes),
-            entity_id=entity_id
+            entity_id=entity_id,
+            episode_id=episode_id
         ) for document in documents if document.vector is not None] # type: ignore
 
         if len(data) == 0:

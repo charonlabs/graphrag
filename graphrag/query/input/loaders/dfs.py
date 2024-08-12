@@ -82,6 +82,7 @@ async def store_entity_semantic_embeddings(
     vectorstore: BaseVectorStore,
     session: AsyncSession | None = None,
     entity_id: int | None = None,
+    episode_id: int | None = None,
     vector_table_model: VectorTable | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity semantic embeddings in a vectorstore."""
@@ -101,8 +102,9 @@ async def store_entity_semantic_embeddings(
     if isinstance(vectorstore, SupabaseVectorStore):
         assert session is not None
         assert entity_id is not None
+        assert episode_id is not None
         assert vector_table_model is not None
-        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, vector_table_model=vector_table_model)
+        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
     return vectorstore
@@ -113,6 +115,7 @@ async def store_entity_behavior_embeddings(
     vectorstore: BaseVectorStore,
     session: AsyncSession | None = None,
     entity_id: int | None = None,
+    episode_id: int | None = None,
     vector_table_model: VectorTable | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity behavior embeddings in a vectorstore."""
@@ -132,8 +135,9 @@ async def store_entity_behavior_embeddings(
     if isinstance(vectorstore, SupabaseVectorStore):
         assert session is not None
         assert entity_id is not None
+        assert episode_id is not None
         assert vector_table_model is not None
-        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, vector_table_model=vector_table_model)
+        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
     return vectorstore

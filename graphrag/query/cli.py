@@ -179,7 +179,7 @@ async def run_local_search(
     entities = read_indexer_entities(final_nodes, final_entities, community_level)
     if isinstance(description_embedding_store, SupabaseVectorStore):
         await store_entity_semantic_embeddings(
-            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, vector_table_model=vector_table_model # type: ignore
+            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model # type: ignore
         )
     else:
         await store_entity_semantic_embeddings(
@@ -205,7 +205,7 @@ async def run_local_search(
     )
 
     if isinstance(description_embedding_store, SupabaseVectorStore):
-        result = await search_engine.asearch(query=query, session=session, entity_id=entity_id, vector_table_model=vector_table_model) # type: ignore
+        result = await search_engine.asearch(query=query, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model) # type: ignore
     else:
         result = await search_engine.asearch(query=query)
     reporter.success(f"Local Search Response: {result.response}")
