@@ -8,7 +8,7 @@ import pandas as pd
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from typing import TypeVar
 from io import StringIO
 
@@ -30,16 +30,20 @@ class SupabaseEmitter(TableEmitter):
 
     async def emit(self, name: str, entity_id: int, episode_id: int, data: pd.DataFrame, session: AsyncSession) -> None:
         """Emit data to the Supabase database."""
-        table = self.table_model(
-            entity_id=entity_id,
-            name=name,
-            data=data.to_json(),
-            created_at=datetime.now(),
-            last_episode_id=episode_id
-        ) # type: ignore
+        insert_data = {
+            "entity_id": entity_id,
+            "name": name,
+            "data": data.to_json(),
+            "created_at": datetime.now(),
+            "last_episode_id": episode_id
+        }
         logger.info(f"Emiting {name} for entity_id {entity_id} and episode_id {episode_id} to Supabase")
         try:
-            session.add(table)
+            stmt = (
+                insert(self.table_model) # type: ignore
+                .values(**insert_data)
+            )
+            await session.scalars(stmt)
             await session.commit()
             logger.info(f"Emitted {name} to Supabase")
         except Exception as e:
