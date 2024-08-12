@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast, TypeVar
 
 import pandas as pd
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 from graphrag.config import InputConfig, InputType

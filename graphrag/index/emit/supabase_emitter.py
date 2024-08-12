@@ -6,8 +6,9 @@ from datetime import datetime
 
 import pandas as pd
 
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import SQLModel, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import SQLModel
+from sqlalchemy import select
 from typing import TypeVar
 from io import StringIO
 

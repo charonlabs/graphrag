@@ -7,7 +7,7 @@ from enum import Enum
 from typing import TypeVar
 
 from sqlmodel import SQLModel
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from graphrag.model import Entity, Relationship
 from graphrag.query.input.retrieval.entities import (

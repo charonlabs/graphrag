@@ -4,8 +4,9 @@ import logging
 from typing import Any, TypeVar, Callable, Any, Awaitable
 
 import pandas as pd
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import SQLModel, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import SQLModel
+from sqlalchemy import select
 
 from graphrag.index.config import PipelineInputConfig
 from graphrag.index.progress import ProgressReporter

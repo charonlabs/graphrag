@@ -7,8 +7,8 @@ import os
 from pathlib import Path
 from typing import cast, TypeVar
 
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import SQLModel, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import SQLModel
 import pandas as pd
 
 from graphrag.config import (

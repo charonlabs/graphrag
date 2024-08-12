@@ -7,8 +7,9 @@ import json
 
 from sklearn.metrics.pairwise import cosine_distances
 
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import SQLModel, select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import SQLModel
+from sqlalchemy import select, delete
 
 from .base import (
     BaseVectorStore,

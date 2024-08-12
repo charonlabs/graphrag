@@ -9,7 +9,7 @@ from typing import Any, TypeVar
 
 import tiktoken
 
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 from graphrag.query.context_builder.builders import LocalContextBuilder

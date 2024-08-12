@@ -27,7 +27,7 @@ from graphrag.query.input.loaders.utils import (
 from graphrag.vector_stores import BaseVectorStore, VectorStoreDocument
 from graphrag.vector_stores.supabase import SupabaseVectorStore
 
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 VectorTable = TypeVar("VectorTable", bound=SQLModel)
