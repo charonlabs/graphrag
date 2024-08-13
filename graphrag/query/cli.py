@@ -45,6 +45,7 @@ async def __get_embedding_description_store(
     config_args: dict | None = None,
     session: AsyncSession | None = None,
     entity_id: int | None = None,
+    episode_id: int | None = None,
     vector_table_model: VectorTable | None = None # type: ignore
 ):
     """Get the embedding description store."""
@@ -67,7 +68,7 @@ async def __get_embedding_description_store(
 
         # dump embeddings from the entities list to the description_embedding_store
         await store_entity_semantic_embeddings(
-            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, vector_table_model=vector_table_model # type: ignore
+            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model # type: ignore
         )
     else:
         # load description embeddings to an in-memory lancedb vectorstore
@@ -154,6 +155,7 @@ async def run_local_search(
     use_db: bool = False,
     session: AsyncSession | None = None,
     entity_id: int | None = None,
+    episode_id: int | None = None,
     table_model: Table | None = None, # type: ignore
     vector_table_model: VectorTable | None = None # type: ignore
 ):
@@ -163,6 +165,7 @@ async def run_local_search(
     if use_db:
         assert session is not None, "Session is required when using the database."
         assert entity_id is not None, "Entity ID is required when using the database."
+        assert episode_id is not None, "Episode ID is required when using the database."
         assert table_model is not None, "Table model is required when using the database."
     
     emitter = SupabaseEmitter(table_model=table_model) # type: ignore
@@ -211,12 +214,13 @@ async def run_local_search(
         config_args=vector_store_args,
         session=session,
         entity_id=entity_id,
+        episode_id=episode_id,
         vector_table_model=vector_table_model # type: ignore
     )
     entities = read_indexer_entities(final_nodes, final_entities, community_level)
     if isinstance(description_embedding_store, SupabaseVectorStore):
         await store_entity_semantic_embeddings(
-            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model # type: ignore
+            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, episode_id=episode_id, episode_id=episode_id, vector_table_model=vector_table_model # type: ignore
         )
     else:
         await store_entity_semantic_embeddings(
