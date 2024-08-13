@@ -36,7 +36,7 @@ class SupabaseVectorStore(BaseVectorStore):
             vector=document.vector,
             attributes=json.dumps(document.attributes),
             entity_id=entity_id,
-            episode_id=episode_id
+            last_episode_id=episode_id
         ) for document in documents if document.vector is not None] # type: ignore
 
         if len(data) == 0:
