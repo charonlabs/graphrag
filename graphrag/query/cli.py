@@ -43,6 +43,9 @@ async def __get_embedding_description_store(
     entities: list[Entity],
     vector_store_type: str = VectorStoreType.LanceDB,
     config_args: dict | None = None,
+    session: AsyncSession | None = None,
+    entity_id: int | None = None,
+    vector_table_model: VectorTable | None = None # type: ignore
 ):
     """Get the embedding description store."""
     if not config_args:
@@ -64,7 +67,7 @@ async def __get_embedding_description_store(
 
         # dump embeddings from the entities list to the description_embedding_store
         await store_entity_semantic_embeddings(
-            entities=entities, vectorstore=description_embedding_store
+            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, vector_table_model=vector_table_model # type: ignore
         )
     else:
         # load description embeddings to an in-memory lancedb vectorstore
@@ -206,6 +209,9 @@ async def run_local_search(
         entities=entities,
         vector_store_type=vector_store_type,
         config_args=vector_store_args,
+        session=session,
+        entity_id=entity_id,
+        vector_table_model=vector_table_model # type: ignore
     )
     entities = read_indexer_entities(final_nodes, final_entities, community_level)
     if isinstance(description_embedding_store, SupabaseVectorStore):

@@ -5,7 +5,7 @@
 
 import argparse
 from enum import Enum
-
+import asyncio
 from .cli import run_global_search, run_local_search
 
 INVALID_METHOD_ERROR = "Invalid method"
@@ -80,22 +80,22 @@ if __name__ == "__main__":
 
     match args.method:
         case SearchType.LOCAL:
-            run_local_search(
+            asyncio.run(run_local_search(
                 args.config,
                 args.data,
                 args.root,
                 args.community_level,
                 args.response_type,
                 args.query[0],
-            )
+            ))
         case SearchType.GLOBAL:
-            run_global_search(
+            asyncio.run(run_global_search(
                 args.config,
                 args.data,
                 args.root,
                 args.community_level,
                 args.response_type,
                 args.query[0],
-            )
+            ))
         case _:
             raise ValueError(INVALID_METHOD_ERROR)
