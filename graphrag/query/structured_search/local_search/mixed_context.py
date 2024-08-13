@@ -9,7 +9,7 @@ import pandas as pd
 import tiktoken
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 
 from graphrag.model import (
     CommunityReport,
@@ -52,7 +52,7 @@ from graphrag.vector_stores.supabase import SupabaseVectorStore
 log = logging.getLogger(__name__)
 
 
-VectorTable = TypeVar("VectorTable", bound=SQLModel)
+VectorTable = TypeVar("VectorTable", bound=DeclarativeBase)
 
 
 class LocalSearchMixedContext(LocalContextBuilder):

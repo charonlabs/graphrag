@@ -15,7 +15,7 @@ from pathlib import Path
 from string import Template
 from typing import cast, TypeVar, Callable, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 
 import pandas as pd
 from datashaper import (
@@ -69,8 +69,8 @@ from .workflows import (
 
 log = logging.getLogger(__name__)
 
-Episode = TypeVar("Episode", bound=SQLModel)
-Table = TypeVar("Table", bound=SQLModel)
+Episode = TypeVar("Episode", bound=DeclarativeBase)
+Table = TypeVar("Table", bound=DeclarativeBase)
 
 async def run_pipeline_with_config(
     config_or_path: PipelineConfig | str,

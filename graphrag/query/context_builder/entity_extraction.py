@@ -6,7 +6,7 @@
 from enum import Enum
 from typing import TypeVar
 
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from graphrag.model import Entity, Relationship
@@ -36,7 +36,7 @@ class EntityVectorStoreKey(str, Enum):
         msg = f"Invalid EntityVectorStoreKey: {value}"
         raise ValueError(msg)
 
-VectorTable = TypeVar("VectorTable", bound=SQLModel)
+VectorTable = TypeVar("VectorTable", bound=DeclarativeBase)
 
 async def map_query_to_entities(
     query: str,

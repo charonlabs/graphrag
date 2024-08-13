@@ -8,7 +8,7 @@ import json
 from sklearn.metrics.pairwise import cosine_distances
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import select, delete
 
 from .base import (
@@ -17,7 +17,7 @@ from .base import (
     VectorStoreSearchResult,
 )
 
-VectorTable = TypeVar("VectorTable", bound=SQLModel)
+VectorTable = TypeVar("VectorTable", bound=DeclarativeBase)
 
 class SupabaseVectorStore(BaseVectorStore):
     """The Supabase vector store implementation."""
@@ -49,7 +49,6 @@ class SupabaseVectorStore(BaseVectorStore):
                 print(f"Error deleting existing data: {e}")
                 pass
             session.add_all(data) # type: ignore
-            await session.commit()
             
     def filter_by_id(self, include_ids: list[str] | list[int]) -> Any:
             """Build a query filter to filter documents by id."""

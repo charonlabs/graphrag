@@ -10,7 +10,7 @@ from typing import Any, TypeVar
 import tiktoken
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 
 from graphrag.query.context_builder.builders import LocalContextBuilder
 from graphrag.query.context_builder.conversation_history import (
@@ -33,7 +33,7 @@ DEFAULT_LLM_PARAMS = {
 log = logging.getLogger(__name__)
 
 
-VectorTable = TypeVar("VectorTable", bound=SQLModel)
+VectorTable = TypeVar("VectorTable", bound=DeclarativeBase)
 
 
 class LocalSearch(BaseSearch):

@@ -10,7 +10,7 @@ from typing import cast, TypeVar
 
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 
 from graphrag.config import InputConfig, InputType
 from graphrag.index.config import PipelineInputConfig
@@ -34,7 +34,7 @@ loaders: dict[str, Callable[..., Awaitable[pd.DataFrame]]] = {
     supabase: load_supabase,
 }
 
-Episode = TypeVar("Episode", bound=SQLModel)
+Episode = TypeVar("Episode", bound=DeclarativeBase)
 
 async def load_input(
     config: PipelineInputConfig | InputConfig,

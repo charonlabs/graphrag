@@ -5,7 +5,7 @@ from typing import Any, TypeVar, Callable, Any, Awaitable
 
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import select
 
 from graphrag.index.config import PipelineInputConfig
@@ -16,7 +16,7 @@ from graphrag.index.utils import gen_md5_hash
 input_type = "supabase"
 log = logging.getLogger(__name__)
 
-Episode = TypeVar("Episode", bound=SQLModel)
+Episode = TypeVar("Episode", bound=DeclarativeBase)
 
 async def load(
     config: PipelineInputConfig,

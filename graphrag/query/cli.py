@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import cast, TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 import pandas as pd
 
 from graphrag.config import (
@@ -36,8 +36,8 @@ from ..index.emit.supabase_emitter import SupabaseEmitter
 
 reporter = PrintProgressReporter("")
 
-Table = TypeVar("Table", bound=SQLModel)
-VectorTable = TypeVar("VectorTable", bound=SQLModel)
+Table = TypeVar("Table", bound=DeclarativeBase)
+VectorTable = TypeVar("VectorTable", bound=DeclarativeBase)
 
 async def __get_embedding_description_store(
     entities: list[Entity],

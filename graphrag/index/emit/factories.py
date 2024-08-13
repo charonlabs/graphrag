@@ -13,10 +13,10 @@ from .supabase_emitter import SupabaseEmitter
 from .table_emitter import TableEmitter
 from .types import TableEmitterType
 
-from sqlmodel import SQLModel
+from sqlalchemy.orm import DeclarativeBase
 from typing import TypeVar
 
-Table = TypeVar("Table", bound=SQLModel)
+Table = TypeVar("Table", bound=DeclarativeBase)
 
 def create_table_emitter(
     emitter_type: TableEmitterType, storage: PipelineStorage, on_error: ErrorHandlerFn, table_model: Table | None = None

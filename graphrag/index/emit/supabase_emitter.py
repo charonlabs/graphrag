@@ -7,8 +7,8 @@ from datetime import datetime
 import pandas as pd
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel
 from sqlalchemy import select
+from sqlalchemy.orm import DeclarativeBase
 from typing import TypeVar
 from io import StringIO
 
@@ -16,7 +16,7 @@ from .table_emitter import TableEmitter
 
 logger = logging.getLogger(__name__)
 
-Table = TypeVar("Table", bound=SQLModel)
+Table = TypeVar("Table", bound=DeclarativeBase)
 
 class SupabaseEmitter(TableEmitter):
     """SupabaseEmitter class."""
@@ -40,7 +40,6 @@ class SupabaseEmitter(TableEmitter):
         logger.info(f"Emiting {name} for entity_id {entity_id} and episode_id {episode_id} to Supabase")
         try:
             session.add(table)
-            await session.commit()
             logger.info(f"Emitted {name} to Supabase")
         except Exception as e:
             logger.error(f"Error emitting {name} to Supabase: {e}")
