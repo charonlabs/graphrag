@@ -62,9 +62,9 @@ async def map_query_to_entities(
         # get entities with highest semantic similarity to query
         # oversample to account for excluded entities
         if isinstance(text_embedding_vectorstore, SupabaseVectorStore):
-            assert session is not None
-            assert entity_id is not None
-            assert vector_table_model is not None
+            assert session is not None, "Session is required when using the database for querying."
+            assert entity_id is not None, "Entity ID is required when using the database for querying."
+            assert vector_table_model is not None, "Table model is required when using the database for querying."
             search_results = await text_embedding_vectorstore.similarity_search_by_text(
                 text=query,
                 text_embedder=lambda t: text_embedder.embed(t),

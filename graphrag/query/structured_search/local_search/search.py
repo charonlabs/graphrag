@@ -76,9 +76,9 @@ class LocalSearch(BaseSearch):
 
         if isinstance(self.context_builder, LocalSearchMixedContext):
             if isinstance(self.context_builder.entity_text_embeddings, SupabaseVectorStore):
-                assert session is not None, "Session is required for SupabaseVectorStore"
-                assert entity_id is not None, "Entity ID is required for SupabaseVectorStore"
-                assert vector_table_model is not None, "Vector table model is required for SupabaseVectorStore"
+                assert session is not None, "Session is required for SupabaseVectorStore search."
+                assert entity_id is not None, "Entity ID is required for SupabaseVectorStore search."
+                assert vector_table_model is not None, "Vector table model is required for SupabaseVectorStore search."
                 context_text, context_records = await self.context_builder.build_context(
                     query=query,
                     conversation_history=conversation_history,

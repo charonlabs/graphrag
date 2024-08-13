@@ -104,9 +104,9 @@ async def run_global_search(
     data_dir, root_dir, config = _configure_paths_and_settings(data_dir, root_dir, use_db)
     
     if use_db:
-        assert session is not None
-        assert entity_id is not None
-        assert table_model is not None
+        assert session is not None, "Session is required when using the database."
+        assert entity_id is not None, "Entity ID is required when using the database."
+        assert table_model is not None, "Table model is required when using the database."
     
     emitter = SupabaseEmitter(table_model=table_model) # type: ignore
     
@@ -161,9 +161,9 @@ async def run_local_search(
     data_dir, root_dir, config = _configure_paths_and_settings(data_dir, root_dir, use_db)
     
     if use_db:
-        assert session is not None
-        assert entity_id is not None
-        assert table_model is not None
+        assert session is not None, "Session is required when using the database."
+        assert entity_id is not None, "Entity ID is required when using the database."
+        assert table_model is not None, "Table model is required when using the database."
     
     emitter = SupabaseEmitter(table_model=table_model) # type: ignore
     

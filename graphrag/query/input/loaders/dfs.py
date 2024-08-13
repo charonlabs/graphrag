@@ -100,10 +100,10 @@ async def store_entity_semantic_embeddings(
         for entity in entities
     ]
     if isinstance(vectorstore, SupabaseVectorStore):
-        assert session is not None
-        assert entity_id is not None
-        assert episode_id is not None
-        assert vector_table_model is not None
+        assert session is not None, "Session is required when using the database for semantic embedding storage."
+        assert entity_id is not None, "Entity ID is required when using the database for semantic embedding storage."
+        assert episode_id is not None, "Episode ID is required when using the database for semantic embedding storage."
+        assert vector_table_model is not None, "Table model is required when using the database for semantic embedding storage."
         await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
@@ -133,10 +133,10 @@ async def store_entity_behavior_embeddings(
         for entity in entities
     ]
     if isinstance(vectorstore, SupabaseVectorStore):
-        assert session is not None
-        assert entity_id is not None
-        assert episode_id is not None
-        assert vector_table_model is not None
+        assert session is not None, "Session is required when using the database for behavior embedding storage."
+        assert entity_id is not None, "Entity ID is required when using the database for behavior embedding storage."
+        assert episode_id is not None, "Episode ID is required when using the database for behavior embedding storage."
+        assert vector_table_model is not None, "Table model is required when using the database for behavior embedding storage."
         await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
