@@ -52,4 +52,4 @@ class SupabaseEmitter(TableEmitter):
         result = query.first()
         if result is None:
             raise ValueError(f"No data found for name '{name}' and entity_id {entity_id}")
-        return pd.read_json(StringIO(result.data))
+        return pd.DataFrame(result.data)
