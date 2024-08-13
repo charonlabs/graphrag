@@ -2,6 +2,7 @@
 
 import logging
 import traceback
+import json
 from datetime import datetime
 
 import pandas as pd
@@ -33,7 +34,7 @@ class SupabaseEmitter(TableEmitter):
         table = self.table_model(
             entity_id=entity_id,
             name=name,
-            data=data.to_json(),
+            data=json.loads(data.to_json()),
             created_at=datetime.now(),
             last_episode_id=episode_id
         ) # type: ignore
