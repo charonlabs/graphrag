@@ -47,7 +47,7 @@ class SupabaseEmitter(TableEmitter):
             
     async def load_table(self, name: str, index_id: int, session: AsyncSession) -> pd.DataFrame:
         """Load table from Supabase."""
-        query = await session.scalars(select(self.table_model).where(self.table_model.index_id == index_id, self.table_model.name == name)) # type: ignore
+        query = await session.scalars(select(self.table_model).where(self.table_model.id == index_id, self.table_model.name == name)) # type: ignore
         result = query.first()
         if result is None:
             raise ValueError(f"No data found for name '{name}' and index_id {index_id}")
