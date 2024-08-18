@@ -120,7 +120,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
         community_context_name: str = "Reports",
         column_delimiter: str = "|",
         session: AsyncSession | None = None,
-        entity_id: int | None = None,
+        index_id: int | None = None,
         vector_table_model: VectorTable | None = None, # type: ignore
         **kwargs: dict[str, Any],
     ) -> tuple[str | list[str], dict[str, pd.DataFrame]]:
@@ -159,7 +159,7 @@ class LocalSearchMixedContext(LocalContextBuilder):
                 k=top_k_mapped_entities,
                 oversample_scaler=2,
                 session=session,
-                entity_id=entity_id,
+                index_id=index_id,
                 vector_table_model=vector_table_model,
             )
         else:

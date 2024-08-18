@@ -81,8 +81,7 @@ async def store_entity_semantic_embeddings(
     entities: list[Entity],
     vectorstore: BaseVectorStore,
     session: AsyncSession | None = None,
-    entity_id: int | None = None,
-    episode_id: int | None = None,
+    index_id: int | None = None,
     vector_table_model: VectorTable | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity semantic embeddings in a vectorstore."""
@@ -101,10 +100,9 @@ async def store_entity_semantic_embeddings(
     ]
     if isinstance(vectorstore, SupabaseVectorStore):
         assert session is not None, "Session is required when using the database for semantic embedding storage."
-        assert entity_id is not None, "Entity ID is required when using the database for semantic embedding storage."
-        assert episode_id is not None, "Episode ID is required when using the database for semantic embedding storage."
+        assert index_id is not None, "Index ID is required when using the database for semantic embedding storage."
         assert vector_table_model is not None, "Table model is required when using the database for semantic embedding storage."
-        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model)
+        await vectorstore.load_documents(documents=documents, session=session, index_id=index_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
     return vectorstore
@@ -114,8 +112,7 @@ async def store_entity_behavior_embeddings(
     entities: list[Entity],
     vectorstore: BaseVectorStore,
     session: AsyncSession | None = None,
-    entity_id: int | None = None,
-    episode_id: int | None = None,
+    index_id: int | None = None,
     vector_table_model: VectorTable | None = None, # type: ignore
 ) -> BaseVectorStore:
     """Store entity behavior embeddings in a vectorstore."""
@@ -134,10 +131,9 @@ async def store_entity_behavior_embeddings(
     ]
     if isinstance(vectorstore, SupabaseVectorStore):
         assert session is not None, "Session is required when using the database for behavior embedding storage."
-        assert entity_id is not None, "Entity ID is required when using the database for behavior embedding storage."
-        assert episode_id is not None, "Episode ID is required when using the database for behavior embedding storage."
+        assert index_id is not None, "Index ID is required when using the database for behavior embedding storage."
         assert vector_table_model is not None, "Table model is required when using the database for behavior embedding storage."
-        await vectorstore.load_documents(documents=documents, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model)
+        await vectorstore.load_documents(documents=documents, session=session, index_id=index_id, vector_table_model=vector_table_model)
     else:
         vectorstore.load_documents(documents=documents)
     return vectorstore

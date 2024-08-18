@@ -44,8 +44,7 @@ async def __get_embedding_description_store(
     vector_store_type: str = VectorStoreType.LanceDB,
     config_args: dict | None = None,
     session: AsyncSession | None = None,
-    entity_id: int | None = None,
-    episode_id: int | None = None,
+    index_id: int | None = None,
     vector_table_model: VectorTable | None = None # type: ignore
 ):
     """Get the embedding description store."""
@@ -68,7 +67,7 @@ async def __get_embedding_description_store(
 
         # dump embeddings from the entities list to the description_embedding_store
         await store_entity_semantic_embeddings(
-            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model # type: ignore
+            entities=entities, vectorstore=description_embedding_store, session=session, index_id=index_id, vector_table_model=vector_table_model # type: ignore
         )
     else:
         # load description embeddings to an in-memory lancedb vectorstore
@@ -98,7 +97,7 @@ async def run_global_search(
     query: str,
     use_db: bool = False,
     session: AsyncSession | None = None,
-    entity_id: int | None = None,
+    index_id: int | None = None,
     table_model: Table | None = None # type: ignore
 ):
     """Run a global search with the given query."""
@@ -106,7 +105,7 @@ async def run_global_search(
     
     if use_db:
         assert session is not None, "Session is required when using the database."
-        assert entity_id is not None, "Entity ID is required when using the database."
+        assert index_id is not None, "Index ID is required when using the database."
         assert table_model is not None, "Table model is required when using the database."
     
     emitter = SupabaseEmitter(table_model=table_model) # type: ignore
@@ -125,9 +124,9 @@ async def run_global_search(
             data_path / "create_final_community_reports.parquet"
         )
     else:
-        final_nodes = await emitter.load_table(name="create_final_nodes", entity_id=entity_id, session=session) # type: ignore
-        final_entities = await emitter.load_table(name="create_final_entities", entity_id=entity_id, session=session) # type: ignore
-        final_community_reports = await emitter.load_table(name="create_final_community_reports", entity_id=entity_id, session=session) # type: ignore
+        final_nodes = await emitter.load_table(name="create_final_nodes", index_id=index_id, session=session) # type: ignore
+        final_entities = await emitter.load_table(name="create_final_entities", index_id=index_id, session=session) # type: ignore
+        final_community_reports = await emitter.load_table(name="create_final_community_reports", index_id=index_id, session=session) # type: ignore
 
     reports = read_indexer_reports(
         final_community_reports, final_nodes, community_level
@@ -154,8 +153,7 @@ async def run_local_search(
     query: str,
     use_db: bool = False,
     session: AsyncSession | None = None,
-    entity_id: int | None = None,
-    episode_id: int | None = None,
+    index_id: int | None = None,
     table_model: Table | None = None, # type: ignore
     vector_table_model: VectorTable | None = None # type: ignore
 ):
@@ -164,8 +162,7 @@ async def run_local_search(
     
     if use_db:
         assert session is not None, "Session is required when using the database."
-        assert entity_id is not None, "Entity ID is required when using the database."
-        assert episode_id is not None, "Episode ID is required when using the database."
+        assert index_id is not None, "Index ID is required when using the database."
         assert table_model is not None, "Table model is required when using the database."
     
     emitter = SupabaseEmitter(table_model=table_model) # type: ignore
@@ -190,13 +187,13 @@ async def run_local_search(
             else None
         )
     else:
-        final_nodes = await emitter.load_table(name="create_final_nodes", entity_id=entity_id, session=session) # type: ignore
-        final_community_reports = await emitter.load_table(name="create_final_community_reports", entity_id=entity_id, session=session) # type: ignore
-        final_text_units = await emitter.load_table(name="create_final_text_units", entity_id=entity_id, session=session) # type: ignore
-        final_relationships = await emitter.load_table(name="create_final_relationships", entity_id=entity_id, session=session) # type: ignore
-        final_entities = await emitter.load_table(name="create_final_entities", entity_id=entity_id, session=session) # type: ignore
+        final_nodes = await emitter.load_table(name="create_final_nodes", index_id=index_id, session=session) # type: ignore
+        final_community_reports = await emitter.load_table(name="create_final_community_reports", index_id=index_id, session=session) # type: ignore
+        final_text_units = await emitter.load_table(name="create_final_text_units", index_id=index_id, session=session) # type: ignore
+        final_relationships = await emitter.load_table(name="create_final_relationships", index_id=index_id, session=session) # type: ignore
+        final_entities = await emitter.load_table(name="create_final_entities", index_id=index_id, session=session) # type: ignore
         try:
-            final_covariates = await emitter.load_table(name="create_final_covariates", entity_id=entity_id, session=session) # type: ignore
+            final_covariates = await emitter.load_table(name="create_final_covariates", index_id=index_id, session=session) # type: ignore
         except:
             final_covariates = None
 
@@ -213,14 +210,13 @@ async def run_local_search(
         vector_store_type=vector_store_type,
         config_args=vector_store_args,
         session=session,
-        entity_id=entity_id,
-        episode_id=episode_id,
+        index_id=index_id,
         vector_table_model=vector_table_model # type: ignore
     )
     entities = read_indexer_entities(final_nodes, final_entities, community_level)
     if isinstance(description_embedding_store, SupabaseVectorStore):
         await store_entity_semantic_embeddings(
-            entities=entities, vectorstore=description_embedding_store, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model # type: ignore
+            entities=entities, vectorstore=description_embedding_store, session=session, index_id=index_id, vector_table_model=vector_table_model # type: ignore
         )
     else:
         await store_entity_semantic_embeddings(
@@ -246,7 +242,7 @@ async def run_local_search(
     )
 
     if isinstance(description_embedding_store, SupabaseVectorStore):
-        result = await search_engine.asearch(query=query, session=session, entity_id=entity_id, episode_id=episode_id, vector_table_model=vector_table_model) # type: ignore
+        result = await search_engine.asearch(query=query, session=session, index_id=index_id, vector_table_model=vector_table_model) # type: ignore
     else:
         result = await search_engine.asearch(query=query)
     reporter.success(f"Local Search Response: {result.response}")

@@ -27,16 +27,15 @@ class SupabaseVectorStore(BaseVectorStore):
         pass
     
     async def load_documents(
-        self, documents: list[VectorStoreDocument], session: AsyncSession, entity_id: int, episode_id: int, vector_table_model: VectorTable # type: ignore
+        self, documents: list[VectorStoreDocument], session: AsyncSession, index_id: int, vector_table_model: VectorTable # type: ignore
     ) -> None:
         """Load documents into vector storage."""
         data = [vector_table_model(
-            id=document.id,
+            vector_id=document.id,
             text=document.text,
             vector=document.vector,
             attributes=json.dumps(document.attributes),
-            entity_id=entity_id,
-            last_episode_id=episode_id
+            index_id=index_id
         ) for document in documents if document.vector is not None] # type: ignore
 
         if len(data) == 0:
@@ -44,7 +43,7 @@ class SupabaseVectorStore(BaseVectorStore):
             
         if data:
             try:
-                await session.scalars(delete(vector_table_model).where(vector_table_model.entity_id == entity_id)) # type: ignore
+                await session.scalars(delete(vector_table_model).where(vector_table_model.index_id == index_id)) # type: ignore
             except Exception as e:
                 print(f"Error deleting existing data: {e}")
                 pass
@@ -59,16 +58,16 @@ class SupabaseVectorStore(BaseVectorStore):
             return self.query_filter
 
     async def similarity_search_by_vector(
-            self, query_embedding: list[float], session: AsyncSession, entity_id: int, vector_table_model: VectorTable, k: int = 10, **kwargs: Any # type: ignore
+            self, query_embedding: list[float], session: AsyncSession, index_id: int, vector_table_model: VectorTable, k: int = 10, **kwargs: Any # type: ignore
         ) -> list[VectorStoreSearchResult]:
             """Perform a vector-based similarity search."""
             if self.query_filter:
                 docs = (
-                    await session.scalars(select(vector_table_model).where(vector_table_model.entity_id == entity_id, vector_table_model.id in self.query_filter).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
+                    await session.scalars(select(vector_table_model).where(vector_table_model.index_id == index_id, vector_table_model.id in self.query_filter).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
                 )
             else:
                 docs = (
-                    await session.scalars(select(vector_table_model).where(vector_table_model.entity_id == entity_id).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
+                    await session.scalars(select(vector_table_model).where(vector_table_model.index_id == index_id).order_by(vector_table_model.vector.cosine_distance(query_embedding)).limit(k)) # type: ignore
                 )
             return [
                 VectorStoreSearchResult(
@@ -84,10 +83,10 @@ class SupabaseVectorStore(BaseVectorStore):
             ]
 
     async def similarity_search_by_text(
-        self, text: str, text_embedder: TextEmbedder, session: AsyncSession, entity_id: int, vector_table_model: VectorTable, k: int = 10, **kwargs: Any # type: ignore
+        self, text: str, text_embedder: TextEmbedder, session: AsyncSession, index_id: int, vector_table_model: VectorTable, k: int = 10, **kwargs: Any # type: ignore
     ) -> list[VectorStoreSearchResult]:
             """Perform a similarity search using a given input text."""
             query_embedding = text_embedder(text)
             if query_embedding:
-                return await self.similarity_search_by_vector(query_embedding, session, entity_id, vector_table_model, k)
+                return await self.similarity_search_by_vector(query_embedding, session, index_id, vector_table_model, k)
             return []

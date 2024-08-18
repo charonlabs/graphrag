@@ -29,16 +29,15 @@ class SupabaseEmitter(TableEmitter):
         """Create a new Supabase Emitter."""
         self.table_model = table_model
 
-    async def emit(self, name: str, entity_id: int, episode_id: int, data: pd.DataFrame, session: AsyncSession) -> None:
+    async def emit(self, name: str, index_id: int, data: pd.DataFrame, session: AsyncSession) -> None:
         """Emit data to the Supabase database."""
         table = self.table_model(
-            entity_id=entity_id,
+            index_id=index_id,
             name=name,
             data=json.loads(data.to_json()),
             created_at=datetime.now(),
-            last_episode_id=episode_id
         ) # type: ignore
-        logger.info(f"Emiting {name} for entity_id {entity_id} and episode_id {episode_id} to Supabase")
+        logger.info(f"Emiting {name} for index_id {index_id} to Supabase")
         try:
             session.add(table)
             logger.info(f"Emitted {name} to Supabase")
@@ -46,10 +45,10 @@ class SupabaseEmitter(TableEmitter):
             logger.error(f"Error emitting {name} to Supabase: {e}")
             traceback.print_exc()
             
-    async def load_table(self, name: str, entity_id: int, session: AsyncSession) -> pd.DataFrame:
+    async def load_table(self, name: str, index_id: int, session: AsyncSession) -> pd.DataFrame:
         """Load table from Supabase."""
-        query = await session.scalars(select(self.table_model).where(self.table_model.entity_id == entity_id, self.table_model.name == name)) # type: ignore
+        query = await session.scalars(select(self.table_model).where(self.table_model.index_id == index_id, self.table_model.name == name)) # type: ignore
         result = query.first()
         if result is None:
-            raise ValueError(f"No data found for name '{name}' and entity_id {entity_id}")
+            raise ValueError(f"No data found for name '{name}' and index_id {index_id}")
         return pd.DataFrame(result.data)
