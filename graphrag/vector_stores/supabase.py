@@ -31,7 +31,7 @@ class SupabaseVectorStore(BaseVectorStore):
     ) -> None:
         """Load documents into vector storage."""
         data = [vector_table_model(
-            vector_id=document.id,
+            id=document.id,
             text=document.text,
             vector=document.vector,
             attributes=json.dumps(document.attributes),
