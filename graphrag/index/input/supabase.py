@@ -27,7 +27,7 @@ async def load(
     progress: ProgressReporter | None,
 ) -> pd.DataFrame:
     """Load the input data for a pipeline."""
-    episodes = await session.scalars(select(episode).options(selectinload(episode.entity)).where(episode.entity.has(id=entity_id))) # type: ignore
+    episodes = (await session.scalars(select(episode).options(selectinload(episode.entity)).where(episode.entity.has(id=entity_id)))).all() # type: ignore
     formatted_episodes = []
     for episode in episodes:
         text = await promptify(session, episode, use_xml=False) # type: ignore
