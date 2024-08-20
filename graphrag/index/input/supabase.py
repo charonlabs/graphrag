@@ -14,7 +14,7 @@ from graphrag.index.storage import PipelineStorage
 from graphrag.index.utils import gen_md5_hash
 
 input_type = "supabase"
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 Episode = TypeVar("Episode", bound=DeclarativeBase)
 
@@ -31,6 +31,7 @@ async def load(
     formatted_episodes = []
     for episode in episodes:
         text = await promptify(session, episode, use_xml=False) # type: ignore
+        logger.debug(f"Loaded episode {episode.id} with text {text}") # type: ignore
         formatted_episode = {"text": text} # type: ignore
         formatted_episode["id"] = episode.id # type: ignore
         formatted_episode["title"] = f"Episode {episode.id}" # type: ignore
