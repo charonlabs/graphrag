@@ -7,6 +7,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import cast, TypeVar
+import traceback
 
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -95,7 +96,12 @@ async def load_input(
             if session is None or episode is None or promptify is None:
                 msg = "Session, episode, and promptify must be provided for supabase input"
                 raise ValueError(msg)
-            results = await loader(config, session, entity_id, episode, promptify, progress)
+            try:
+                results = await loader(config, session, entity_id, episode, promptify, progress)
+            except Exception as e:
+                log.error("Error loading input: %s", e)
+                traceback.print_exc()
+                raise e
         else:
             results = await loader(config, progress, storage)
         return cast(pd.DataFrame, results)
