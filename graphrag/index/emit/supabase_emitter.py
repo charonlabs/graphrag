@@ -9,7 +9,7 @@ import pandas as pd
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, selectinload
 from typing import TypeVar
 from io import StringIO
 
