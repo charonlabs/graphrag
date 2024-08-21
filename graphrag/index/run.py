@@ -74,7 +74,7 @@ Table = TypeVar("Table", bound=DeclarativeBase)
 
 async def run_pipeline_with_config(
     config_or_path: PipelineConfig | str,
-    index_id: int | None = None,
+    graph_index: DeclarativeBase | None = None,
     entity_id: int | None = None,
     session: AsyncSession | None = None,
     episode_model: Episode | None = None,
@@ -179,7 +179,7 @@ async def run_pipeline_with_config(
         progress_reporter=progress_reporter,
         emit=emit,
         is_resume_run=is_resume_run,
-        index_id=index_id,
+        graph_index=graph_index,
         entity_id=entity_id,
         session=session,
         table_model=table_model,
@@ -200,7 +200,7 @@ async def run_pipeline(
     emit: list[TableEmitterType] | None = None,
     memory_profile: bool = False,
     is_resume_run: bool = False,
-    index_id: int | None = None,
+    graph_index: DeclarativeBase | None = None,
     entity_id: int | None = None,
     session: AsyncSession | None = None,
     table_model: Table | None = None,
@@ -262,12 +262,12 @@ async def run_pipeline(
             "stats.json", json.dumps(asdict(stats), indent=4, ensure_ascii=False)
         )
 
-    async def load_table_from_storage(name: str, index_id: int | None = None, session: AsyncSession | None = None, supabase_emitter: SupabaseEmitter | None = None) -> pd.DataFrame:
+    async def load_table_from_storage(name: str, graph_index: DeclarativeBase | None = None, session: AsyncSession | None = None, supabase_emitter: SupabaseEmitter | None = None) -> pd.DataFrame:
         if any(isinstance(emitter, SupabaseEmitter) for emitter in emitters):
-            if index_id is None or session is None or supabase_emitter is None:
-                raise ValueError("Index ID, session, and supabase emitter instance are required for Supabase emitter")
+            if graph_index is None or session is None or supabase_emitter is None:
+                raise ValueError("Graph Index, session, and supabase emitter instance are required for Supabase emitter")
             log.info(f"Loading table {name} from Supabase")
-            res = await supabase_emitter.load_table(name=name, index_id=index_id, session=session)
+            res = await supabase_emitter.load_table(name=name, graph_index=graph_index, session=session)
             log.info(f"Loaded info: {res}")
             return res
         if not await storage.has(name):
@@ -288,7 +288,7 @@ async def run_pipeline(
             workflow_id = f"workflow:{id}"
             if any(isinstance(emitter, SupabaseEmitter) for emitter in emitters):
                 supabase_emitter = next((emitter for emitter in emitters if isinstance(emitter, SupabaseEmitter)), None)
-                table = await load_table_from_storage(f"{id}", index_id, session, supabase_emitter)
+                table = await load_table_from_storage(f"{id}", graph_index, session, supabase_emitter)
             else:
                 table = await load_table_from_storage(f"{id}.parquet")
             workflow.add_table(workflow_id, table)
@@ -317,13 +317,13 @@ async def run_pipeline(
             "first row of %s => %s", workflow_name, workflow.output().iloc[0].to_json()
         )
 
-    async def emit_workflow_output(workflow: Workflow, index_id: int | None = None, session: AsyncSession | None = None) -> pd.DataFrame:
+    async def emit_workflow_output(workflow: Workflow, graph_index: DeclarativeBase | None = None, session: AsyncSession | None = None) -> pd.DataFrame:
         output = cast(pd.DataFrame, workflow.output())
         for emitter in emitters:
             if type(emitter) == SupabaseEmitter:
-                if index_id is None or session is None:
-                    raise ValueError("Index ID and session are required for Supabase emitter")
-                await emitter.emit(workflow.name, index_id, output, session)
+                if graph_index is None or session is None:
+                    raise ValueError("Graph Index and session are required for Supabase emitter")
+                await emitter.emit(workflow.name, graph_index, output, session)
             else:
                 await emitter.emit(workflow.name, output)
         return output
@@ -366,7 +366,7 @@ async def run_pipeline(
             # await write_workflow_stats(workflow, result, workflow_start_time)
 
             # Save the output from the workflow
-            output = await emit_workflow_output(workflow, index_id, session)
+            output = await emit_workflow_output(workflow, graph_index, session)
             yield PipelineRunResult(workflow_name, output, None)
             output = None
             workflow.dispose()

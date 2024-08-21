@@ -29,7 +29,7 @@ class SupabaseEmitter(TableEmitter):
         """Create a new Supabase Emitter."""
         self.table_model = table_model
 
-    async def emit(self, name: str, index_id: int, data: pd.DataFrame, session: AsyncSession) -> None:
+    async def emit(self, name: str, graph_index: DeclarativeBase, data: pd.DataFrame, session: AsyncSession) -> None:
         """Emit data to the Supabase database."""
         table = self.table_model(
             index_id=index_id,
@@ -39,15 +39,15 @@ class SupabaseEmitter(TableEmitter):
         ) # type: ignore
         logger.info(f"Emiting {name} for index_id {index_id} to Supabase")
         try:
-            session.add(table)
+            (await graph_index.awaitable_attrs.rows).append(table)
             logger.info(f"Emitted {name} to Supabase")
         except Exception as e:
             logger.error(f"Error emitting {name} to Supabase: {e}")
             traceback.print_exc()
             
-    async def load_table(self, name: str, index_id: int, session: AsyncSession) -> pd.DataFrame:
+    async def load_table(self, name: str, graph_index: DeclarativeBase, session: AsyncSession) -> pd.DataFrame:
         """Load table from Supabase."""
-        query = await session.scalars(select(self.table_model).where(self.table_model.index_id == index_id, self.table_model.name == name)) # type: ignore
+        query = await session.scalars(select(self.table_model).options(selectinload(self.table_model.index)).where(self.table_model.index == graph_index, self.table_model.name == name)) # type: ignore
         result = query.first()
         if result is None:
             raise ValueError(f"No data found for name '{name}' and index_id {index_id}")
