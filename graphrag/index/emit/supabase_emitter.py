@@ -32,12 +32,11 @@ class SupabaseEmitter(TableEmitter):
     async def emit(self, name: str, graph_index: DeclarativeBase, data: pd.DataFrame, session: AsyncSession) -> None:
         """Emit data to the Supabase database."""
         table = self.table_model(
-            index_id=index_id,
             name=name,
             data=json.loads(data.to_json()),
             created_at=datetime.now(),
         ) # type: ignore
-        logger.info(f"Emiting {name} for index_id {index_id} to Supabase")
+        logger.info(f"Emiting {name} to Supabase")
         try:
             (await graph_index.awaitable_attrs.rows).append(table)
             logger.info(f"Emitted {name} to Supabase")
@@ -50,5 +49,5 @@ class SupabaseEmitter(TableEmitter):
         query = await session.scalars(select(self.table_model).options(selectinload(self.table_model.index)).where(self.table_model.index == graph_index, self.table_model.name == name)) # type: ignore
         result = query.first()
         if result is None:
-            raise ValueError(f"No data found for name '{name}' and index_id {index_id}")
+            raise ValueError(f"No data found for name '{name}'")
         return pd.DataFrame(result.data)
