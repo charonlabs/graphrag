@@ -266,7 +266,10 @@ async def run_pipeline(
         if any(isinstance(emitter, SupabaseEmitter) for emitter in emitters):
             if index_id is None or session is None or supabase_emitter is None:
                 raise ValueError("Index ID, session, and supabase emitter instance are required for Supabase emitter")
-            return await supabase_emitter.load_table(name=name, index_id=index_id, session=session)
+            log.info(f"Loading table {name} from Supabase")
+            res = await supabase_emitter.load_table(name=name, index_id=index_id, session=session)
+            log.info(f"Loaded info: {res}")
+            return res
         if not await storage.has(name):
             msg = f"Could not find {name} in storage!"
             raise ValueError(msg)
