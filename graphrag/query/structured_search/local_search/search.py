@@ -66,7 +66,7 @@ class LocalSearch(BaseSearch):
         query: str,
         conversation_history: ConversationHistory | None = None,
         session: AsyncSession | None = None,
-        index_id: int | None = None,
+        graph_index: DeclarativeBase | None = None,
         vector_table_model: VectorTable | None = None, # type: ignore
         **kwargs,
     ) -> SearchResult:
@@ -77,13 +77,13 @@ class LocalSearch(BaseSearch):
         if isinstance(self.context_builder, LocalSearchMixedContext):
             if isinstance(self.context_builder.entity_text_embeddings, SupabaseVectorStore):
                 assert session is not None, "Session is required for SupabaseVectorStore search."
-                assert index_id is not None, "Index ID is required for SupabaseVectorStore search."
+                assert graph_index is not None, "Graph index is required for SupabaseVectorStore search."
                 assert vector_table_model is not None, "Vector table model is required for SupabaseVectorStore search."
                 context_text, context_records = await self.context_builder.build_context(
                     query=query,
                     conversation_history=conversation_history,
                     session=session,
-                    index_id=index_id,
+                    graph_index=graph_index,
                     vector_table_model=vector_table_model,
                     **kwargs,
                     **self.context_builder_params,

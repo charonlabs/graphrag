@@ -49,7 +49,7 @@ async def map_query_to_entities(
     k: int = 10,
     oversample_scaler: int = 2,
     session: AsyncSession | None = None,
-    index_id: int | None = None,
+    graph_index: DeclarativeBase | None = None,
     vector_table_model: VectorTable | None = None, # type: ignore
 ) -> list[Entity]:
     """Extract entities that match a given query using semantic similarity of text embeddings of query and entity descriptions."""
@@ -63,14 +63,14 @@ async def map_query_to_entities(
         # oversample to account for excluded entities
         if isinstance(text_embedding_vectorstore, SupabaseVectorStore):
             assert session is not None, "Session is required when using the database for querying."
-            assert index_id is not None, "Index ID is required when using the database for querying."
+            assert graph_index is not None, "Graph index is required when using the database for querying."
             assert vector_table_model is not None, "Table model is required when using the database for querying."
             search_results = await text_embedding_vectorstore.similarity_search_by_text(
                 text=query,
                 text_embedder=lambda t: text_embedder.embed(t),
                 k=k * oversample_scaler,
                 session=session,
-                index_id=index_id,
+                graph_index=graph_index,
                 vector_table_model=vector_table_model,
             )
         else:
