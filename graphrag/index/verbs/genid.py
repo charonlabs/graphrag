@@ -9,6 +9,7 @@ import pandas as pd
 from datashaper import TableContainer, VerbInput, verb
 
 from graphrag.index.utils import gen_md5_hash
+from uuid import UUID
 
 
 @verb(name="genid")
@@ -60,6 +61,8 @@ def genid(
         data[to] = data.apply(lambda row: gen_md5_hash(row, hash), axis=1)
     elif method == "increment":
         data[to] = data.index + 1
+    elif method == "uuid":
+        data[to] = data.apply(lambda _: str(UUID()), axis=1)
     else:
         msg = f"Unknown method {method}"
         raise ValueError(msg)
