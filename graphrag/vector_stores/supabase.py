@@ -45,13 +45,13 @@ class SupabaseVectorStore(BaseVectorStore):
 
 
         if data:
-            try:
-                for vector in (await graph_index.awaitable_attrs.vectors):
-                    if vector in session:
-                        session.expunge(vector)
-            except Exception as e:
-                logger.error(f"Error removing existing vectors: {e}")
-                traceback.print_exc()
+            # try:
+            #     for vector in (await graph_index.awaitable_attrs.vectors):
+            #         if vector in session:
+            #             session.expunge(vector)
+            # except Exception as e:
+            #     logger.error(f"Error removing existing vectors: {e}")
+            #     traceback.print_exc()
 
             (await graph_index.awaitable_attrs.vectors).extend(data) # type: ignore
 
