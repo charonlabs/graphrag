@@ -38,7 +38,7 @@ class SupabaseEmitter(TableEmitter):
         ) # type: ignore
         logger.info(f"Emiting {name} to Supabase")
         try:
-            (await graph_index.awaitable_attrs.rows).append(table)
+            (await graph_index.awaitable_attrs.rows).append(table) # type: ignore
             logger.info(f"Emitted {name} to Supabase")
         except Exception as e:
             logger.error(f"Error emitting {name} to Supabase: {e}")
