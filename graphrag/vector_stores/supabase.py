@@ -45,10 +45,8 @@ class SupabaseVectorStore(BaseVectorStore):
 
         if data:
             try:
-                existing_rows = (await session.scalars(select(vector_table_model).where(vector_table_model.index_id == index_id))).all() # type: ignore
-                if existing_rows:
-                     for row in existing_rows:
-                          await session.delete(row)
+                for vector in (await graph_index.awaitable_attrs.vectors):
+                     await session.delete(vector)
             except Exception as e:
                 logger.error(f"Error adding vectors to session: {e}")
                 traceback.print_exc()
