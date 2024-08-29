@@ -46,8 +46,8 @@ class SupabaseEmitter(TableEmitter):
             
     async def load_table(self, name: str, graph_index: DeclarativeBase, session: AsyncSession) -> pd.DataFrame:
         """Load table from Supabase."""
-        query = await session.scalars(select(self.table_model).options(selectinload(self.table_model.index)).where(self.table_model.index == graph_index, self.table_model.name == name)) # type: ignore
-        result = query.first()
-        if result is None:
-            raise ValueError(f"No data found for name '{name}'")
-        return pd.DataFrame(result.data)
+        rows = await graph_index.awaitable_attrs.rows # type: ignore
+        for row in rows:
+            if row.name == name:
+                return pd.DataFrame(row.data)
+        raise ValueError(f"No data found for name '{name}'")
