@@ -36,7 +36,8 @@ class SupabaseVectorStore(BaseVectorStore):
     ) -> None:
         """Load documents into vector storage."""
         try:
-            (await graph_index.awaitable_attrs.vectors).clear()
+            for vector in (await graph_index.awaitable_attrs.vectors):
+                    await session.delete(vector)
         except Exception as e:
             logger.error(f"Error removing existing vectors: {e}")
             traceback.print_exc()
