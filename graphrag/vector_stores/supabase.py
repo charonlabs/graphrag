@@ -35,12 +35,6 @@ class SupabaseVectorStore(BaseVectorStore):
         self, documents: list[VectorStoreDocument], session: AsyncSession, graph_index: DeclarativeBase, vector_table_model: VectorTable # type: ignore
     ) -> None:
         """Load documents into vector storage."""
-        try:
-            for vector in (await graph_index.awaitable_attrs.vectors):
-                    await session.delete(vector)
-        except Exception as e:
-            logger.error(f"Error removing existing vectors: {e}")
-            traceback.print_exc()
 
         data = [vector_table_model(
             id=document.id,
@@ -49,7 +43,16 @@ class SupabaseVectorStore(BaseVectorStore):
             attributes=json.dumps(document.attributes),
         ) for document in documents if document.vector is not None] # type: ignore
 
-        (await graph_index.awaitable_attrs.vectors).extend(data) # type: ignore
+
+        if data:
+            try:
+                for vector in (await graph_index.awaitable_attrs.vectors):
+                        session.expunge(vector)
+            except Exception as e:
+                logger.error(f"Error removing existing vectors: {e}")
+                traceback.print_exc()
+
+            (await graph_index.awaitable_attrs.vectors).extend(data) # type: ignore
 
             
     def filter_by_id(self, include_ids: list[str] | list[int]) -> Any:
