@@ -43,11 +43,13 @@ class SupabaseVectorStore(BaseVectorStore):
             
         if data:
             try:
-                await session.scalars(delete(vector_table_model).where(vector_table_model.index_id == index_id)) # type: ignore
+                existing_rows = (await session.scalars(select(vector_table_model).where(vector_table_model.index_id == index_id))).all() # type: ignore
+                if existing_rows:
+                     for row in existing_rows:
+                          await session.delete(row)
             except Exception as e:
                 print(f"Error deleting existing data: {e}")
                 pass
-            session.add_all(data) # type: ignore
             
     def filter_by_id(self, include_ids: list[str] | list[int]) -> Any:
             """Build a query filter to filter documents by id."""
